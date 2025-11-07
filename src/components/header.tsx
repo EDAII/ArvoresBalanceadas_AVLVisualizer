@@ -1,29 +1,41 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 
 interface HeaderProps {
-  inputValue: string;
-  setInputValue: Dispatch<SetStateAction<string>>;
   searchValue: string;
   setSearchValue: Dispatch<SetStateAction<string>>;
-  handleInsert: () => void;
-  handleDelete: () => void;
+  handleInsert: (value: number) => void;
+  handleDelete: (value: number) => void;
   handleFind: () => void;
   found: boolean | null;
   forceUpdate: () => void;
   setMessage: Dispatch<SetStateAction<string>>;
 }
 
-function Header(props: HeaderProps) {
-  const {
-    inputValue,
-    setInputValue,
-    searchValue,
-    setSearchValue,
-    handleInsert,
-    handleDelete,
-    handleFind,
-    found,
-  } = props;
+function Header({
+  searchValue,
+  setSearchValue,
+  handleInsert,
+  handleDelete,
+  handleFind,
+  found,
+}: HeaderProps) {
+  const [inputValue, setInputValue] = useState("");
+
+  const handleInsertClick = () => {
+    const value = Number(inputValue);
+    if (!isNaN(value)) {
+      handleInsert(value);
+      setInputValue("");
+    }
+  };
+
+  const handleDeleteClick = () => {
+    const value = Number(inputValue);
+    if (!isNaN(value)) {
+      handleDelete(value);
+      setInputValue("");
+    }
+  };
 
   return (
     <div className="border border-gray-300 rounded-lg bg-gray-50-50 p-4 sm:p-6">
@@ -51,13 +63,13 @@ function Header(props: HeaderProps) {
             />
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={handleInsert}
+                onClick={handleInsertClick}
                 className="px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 active:scale-95 transition-all duration-200 shadow-sm"
               >
                 Inserir
               </button>
               <button
-                onClick={handleDelete}
+                onClick={handleDeleteClick}
                 className="px-4 py-2.5 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 active:scale-95 transition-all duration-200 shadow-sm"
               >
                 Remover

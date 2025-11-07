@@ -1,12 +1,36 @@
+import { useState, type SetStateAction } from "react";
 import Content from "./components/content";
 import Header from "./components/header";
+import { insertNode } from "./functions/insertNode";
+import type { TreeNode } from "./types/treeNode";
 
 function App() {
+  const [treeData, setTreeData] = useState<TreeNode | null>(null);
+
   return (
     <div className="min-h-screen bg-gray-100 pt-16">
       <div className="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6 space-y-6">
-        <Header />
-        <Content />
+        <Header
+          handleInsert={(value) => {
+            setTreeData((prev) => insertNode(prev, value));
+          }}
+          handleDelete={(value) => {}}
+          searchValue={""}
+          setSearchValue={function (value: SetStateAction<string>): void {
+            throw new Error("Function not implemented.");
+          }}
+          handleFind={function (): void {
+            throw new Error("Function not implemented.");
+          }}
+          found={null}
+          forceUpdate={function (): void {
+            throw new Error("Function not implemented.");
+          }}
+          setMessage={function (value: SetStateAction<string>): void {
+            throw new Error("Function not implemented.");
+          }}
+        />
+        <Content treeData={treeData} />
       </div>
     </div>
   );
