@@ -1,32 +1,59 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 
 interface HeaderProps {
-  inputValue: string;
-  setInputValue: Dispatch<SetStateAction<string>>;
   searchValue: string;
   setSearchValue: Dispatch<SetStateAction<string>>;
-  handleInsert: () => void;
-  handleDelete: () => void;
+  handleInsert: (value: number) => void;
+  handleDelete: (value: number) => void;
   handleFind: () => void;
   found: boolean | null;
   forceUpdate: () => void;
   setMessage: Dispatch<SetStateAction<string>>;
 }
 
-function Header(props: HeaderProps) {
-  const {
-    inputValue,
-    setInputValue,
-    searchValue,
-    setSearchValue,
-    handleInsert,
-    handleDelete,
-    handleFind,
-    found,
-  } = props;
+function Header({
+  searchValue,
+  setSearchValue,
+  handleInsert,
+  handleDelete,
+  handleFind,
+  found,
+}: HeaderProps) {
+  const [inputValue, setInputValue] = useState("");
+
+  const handleInsertClick = () => {
+    const value = Number(inputValue);
+    if (!isNaN(value)) {
+      handleInsert(value);
+      setInputValue("");
+    }
+  };
+
+  const handleDeleteClick = () => {
+    const value = Number(inputValue);
+    if (!isNaN(value)) {
+      handleDelete(value);
+      setInputValue("");
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      const value = Number(inputValue);
+      if (isNaN(value)) return;
+
+      if (e.ctrlKey) {
+        handleDelete(value);
+      } else {
+        handleInsert(value);
+      }
+
+      setInputValue("");
+    }
+  };
 
   return (
-    <div className="border border-gray-300 rounded-lg bg-gray-50-50 p-4 sm:p-6">
+    <div className="border border-gray-300 rounded-lg bg-gray-50 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
         <header className="text-center mb-8">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-indigo-800 tracking-tight">
@@ -46,19 +73,19 @@ function Header(props: HeaderProps) {
               type="number"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleInsert()}
-              placeholder="Ex: 42"
+              onKeyDown={handleKeyDown}
+              placeholder="Digite aqui"
               className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
             />
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={handleInsert}
+                onClick={handleInsertClick}
                 className="px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 active:scale-95 transition-all duration-200 shadow-sm"
               >
                 Inserir
               </button>
               <button
-                onClick={handleDelete}
+                onClick={handleDeleteClick}
                 className="px-4 py-2.5 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 active:scale-95 transition-all duration-200 shadow-sm"
               >
                 Remover
@@ -94,10 +121,15 @@ function Header(props: HeaderProps) {
             )}
           </div>
 
-           <div className="flex flex-col space-y-3">
+          <div className="flex flex-col space-y-3">
             <div className="h-[1.25rem]" />
             <div className="h-[2.625rem]" />
-            <button className="w-full px-6 py-2.5 bg-gray-700 text-white text-sm font-medium rounded-xl hover:bg-gray-800 active:scale-95 transition-all duration-200 shadow-sm">
+            <button
+              onClick={() => {
+                console.log("Limpar árvore clicado");
+              }}
+              className="w-full px-6 py-2.5 bg-gray-700 text-white text-sm font-medium rounded-xl hover:bg-gray-800 active:scale-95 transition-all duration-200 shadow-sm"
+            >
               Limpar Árvore
             </button>
           </div>
