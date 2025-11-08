@@ -1,22 +1,29 @@
 import { useState, type SetStateAction } from "react";
 import Content from "./components/content";
 import Header from "./components/header";
+import type { TreeNode } from "./types/treeNode";
 import { insertNode } from "./functions/insertNode";
 import { deleteNode } from "./functions/deleteNode";
-import type { TreeNode } from "./types/treeNode";
 
 function App() {
-const [treeData, setTreeData] = useState<TreeNode | null>(null);
+  const [treeData, setTreeData] = useState<TreeNode | null>(null);
+
+  const handleInsert = (value: number) => {
+    const newTree = insertNode(treeData, value);
+    setTreeData(newTree);
+  };
+
+  const handleDelete = (value: number) => {
+    const newTree = deleteNode(treeData, value);
+    setTreeData(newTree);
+  };
+
   return (
-<div className="min-h-screen bg-gray-100 flex items-center justify-center">
-  <div className="max-w-6xl w-full bg-white shadow-lg rounded-lg p-6 space-y-6">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="max-w-6xl w-full bg-white shadow-lg rounded-lg p-6 space-y-6">
         <Header
-          handleInsert={(value) => {
-            setTreeData((prev) => insertNode(prev, value));
-          }}
-          handleDelete={(value) => {
-            setTreeData((prev) => deleteNode(prev, value));
-          }}
+          handleInsert={handleInsert}
+          handleDelete={handleDelete}
           handleClear={() => setTreeData(null)}
           searchValue={""}
           setSearchValue={function (value: SetStateAction<string>): void {
