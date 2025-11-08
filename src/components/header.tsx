@@ -46,7 +46,8 @@ function Header(props: HeaderProps) {
               type="number"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Ex: 200"
+              onKeyDown={(e) => e.key === "Enter" && handleInsert()}
+              placeholder="Ex: 42"
               className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
             />
             <div className="grid grid-cols-2 gap-2">
@@ -93,7 +94,7 @@ function Header(props: HeaderProps) {
             )}
           </div>
 
-          <div className="flex flex-col space-y-3">
+           <div className="flex flex-col space-y-3">
             <div className="h-[1.25rem]" />
             <div className="h-[2.625rem]" />
             <button className="w-full px-6 py-2.5 bg-gray-700 text-white text-sm font-medium rounded-xl hover:bg-gray-800 active:scale-95 transition-all duration-200 shadow-sm">
