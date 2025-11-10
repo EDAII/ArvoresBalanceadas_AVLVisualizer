@@ -1,6 +1,8 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import Tree from "react-d3-tree-shejire/lib/Tree";
 import type { TreeNode } from "../types/treeNode";
+import { searchNode } from "../functions/searchNode";
+import type { SearchStep } from "../functions/searchNode";
 
 type RawNodeDatum = {
   name: string;
@@ -8,18 +10,14 @@ type RawNodeDatum = {
   attributes?: Record<string, string>;
   children?: RawNodeDatum[];
 };
-
 type Dim = { width: number; height: number };
 
 function convertToRawNodeDatum(node: TreeNode | null): RawNodeDatum | null {
   if (!node) return null;
-
   const rawChildren: (RawNodeDatum | null)[] = [null, null];
   if (node.children?.[0]) rawChildren[0] = convertToRawNodeDatum(node.children[0]);
   if (node.children?.[1]) rawChildren[1] = convertToRawNodeDatum(node.children[1]);
-
   const filtered = rawChildren.filter((c): c is RawNodeDatum => c !== null);
-
   return {
     _id: node._id,
     name: node.name,
@@ -27,23 +25,89 @@ function convertToRawNodeDatum(node: TreeNode | null): RawNodeDatum | null {
     children: filtered.length > 0 ? filtered : undefined,
   };
 }
-
-export default function Content({ treeData }: { treeData: TreeNode | null }) {
+export default function Content({
+  treeData,
+  searchTarget,
+  searchTrigger,
+  isAnimating,
+  onSearchComplete,
+  setIsAnimating,
+}: {
+  treeData: TreeNode | null;
+  searchTarget: number | null;
+  searchTrigger: number;
+  isAnimating: boolean;
+  onSearchComplete: (found: boolean) => void;
+  setIsAnimating: (val: boolean) => void;
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const renderCountRef = useRef(0);
   const [containerDim, setContainerDim] = useState<Dim>({ width: 0, height: 0 });
   const [translate, setTranslate] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(0.9);
-
+  const [searchPath, setSearchPath] = useState<string[]>([]);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [foundNodeId, setFoundNodeId] = useState<string | null>(null);
+  const searchExecutedRef = useRef(false);
   const rawData = treeData ? convertToRawNodeDatum(treeData) : null;
 
   useEffect(() => {
-    if (treeData) {
-      const left = treeData.children?.[0]?.name ?? "null";
-      const right = treeData.children?.[1]?.name ?? "null";
-    } else {
+    if (!treeData || searchTarget === null || searchTrigger === 0) {
+      return;
     }
-  }, [treeData]);
+    if (isAnimating || searchExecutedRef.current) {
+      return;
+    }
+
+    searchExecutedRef.current = true;
+    setIsAnimating(true);
+    setSearchPath([]);
+    setCurrentStep(0);
+    setFoundNodeId(null);
+
+    const generator = searchNode(treeData, searchTarget);
+    const steps: SearchStep[] = [];
+
+    const runStep = () => {
+      const result = generator.next();
+      if (result.done) {
+        const found = !!result.value?.isFound;
+        if (found && result.value) {
+          steps.push(result.value);
+          setFoundNodeId(result.value.nodeId);
+        }
+        setSearchPath(steps.map(s => s.nodeId));
+        setCurrentStep(steps.length);
+        setTimeout(() => {
+          onSearchComplete(found);
+          setIsAnimating(false);
+        }, 600);
+        return;
+      }
+
+      const step = result.value!;
+      steps.push(step);
+      setSearchPath(steps.map(s => s.nodeId));
+      setCurrentStep(steps.length);
+
+      if (step.isFound) {
+        setFoundNodeId(step.nodeId);
+        setTimeout(() => {
+          onSearchComplete(true);
+          setIsAnimating(false);
+        }, 800);
+        return;
+      }
+
+      setTimeout(runStep, 700);
+    };
+
+    runStep();
+  }, [searchTrigger]);
+
+  useEffect(() => {
+    searchExecutedRef.current = false;
+  }, [searchTarget, treeData]);
 
   const centerTreeByBBox = useCallback(() => {
     const container = containerRef.current;
@@ -88,11 +152,10 @@ export default function Content({ treeData }: { treeData: TreeNode | null }) {
       const desiredY = ch / 2 - bboxCenterY * scale;
       if (!Number.isFinite(desiredX) || !Number.isFinite(desiredY)) return;
       setTranslate({ x: desiredX, y: desiredY });
-      if (current?.scale && current.scale !== zoom) {
+      if (current?.scale && current.scale !== scale) {
         setZoom(current.scale);
       }
     } catch (err) {
-      /* empty */
     }
   }, [zoom]);
 
@@ -135,8 +198,7 @@ export default function Content({ treeData }: { treeData: TreeNode | null }) {
   return (
     <div
       ref={containerRef}
-      className="h-[500px] w-full overflow-hidden rounded-lg border border-gray-300 bg-gray-50"
-      style={{ position: "relative" }}
+      className="h-[500px] w-full overflow-hidden rounded-lg border border-gray-300 bg-gray-50 relative"
     >
       <Tree
         key={treeData._id}
@@ -151,6 +213,63 @@ export default function Content({ treeData }: { treeData: TreeNode | null }) {
         scaleExtent={{ min: 0.3, max: 2 }}
         transitionDuration={400}
         nodeSize={{ x: 180, y: 100 }}
+        renderCustomNodeElement={(rd3tProps) => {
+          const nodeDatum = rd3tProps.nodeDatum as RawNodeDatum;
+          const isInPath = searchPath.includes(nodeDatum._id);
+          const isCurrent = searchPath[currentStep - 1] === nodeDatum._id;
+          const isFound = foundNodeId === nodeDatum._id;
+          return (
+            <g>
+              <circle
+                r={30}
+                fill="#6366f1"
+                stroke={isInPath ? "#fbbf24" : "#4f46e5"}
+                strokeWidth={isCurrent ? 6 : isInPath ? 4 : 2}
+                opacity={isInPath ? 1 : 0.9}
+                className={isFound ? "animate-pulse" : ""}
+              />
+              <text
+                fill="white"
+                stroke="none"
+                fontSize={22}
+                fontWeight="bold"
+                textAnchor="middle"
+                y={7}
+              >
+                {nodeDatum.name}
+              </text>
+              <text
+                fill="#1f2937"
+                stroke="none"
+                fontSize={14}
+                fontWeight="semibold"
+                textAnchor="middle"
+                y={50}
+                className="select-none"
+              >
+                h: {nodeDatum.attributes?.height}
+              </text>
+              {isCurrent && (
+                <circle
+                  r={40}
+                  fill="none"
+                  stroke="#fbbf24"
+                  strokeWidth={3}
+                  className="animate-ping"
+                />
+              )}
+              {isFound && (
+                <circle
+                  r={48}
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth={5}
+                  className="animate-pulse"
+                />
+              )}
+            </g>
+          );
+        }}
       />
     </div>
   );

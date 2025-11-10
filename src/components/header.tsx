@@ -1,15 +1,13 @@
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useState } from "react";
 
 interface HeaderProps {
   searchValue: string;
-  setSearchValue: Dispatch<SetStateAction<string>>;
+  setSearchValue: (val: string) => void;
   handleInsert: (value: number) => void;
   handleDelete: (value: number) => void;
-  handleClear: () => void
-  handleFind: () => void;
+  handleClear: () => void;
+  handleFind: (value: number) => void;
   found: boolean | null;
-  forceUpdate: () => void;
-  setMessage: Dispatch<SetStateAction<string>>;
 }
 
 function Header({
@@ -39,17 +37,22 @@ function Header({
     }
   };
 
+  const handleFindClick = () => {
+    const value = Number(searchValue);
+    if (!isNaN(value)) {
+      handleFind(value);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       const value = Number(inputValue);
       if (isNaN(value)) return;
-
       if (e.ctrlKey) {
         handleDelete(value);
       } else {
         handleInsert(value);
       }
-
       setInputValue("");
     }
   };
@@ -65,7 +68,6 @@ function Header({
             Demonstração Interativa
           </p>
         </header>
-
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="flex flex-col space-y-3">
             <label className="text-sm font-semibold text-gray-700">
@@ -103,11 +105,12 @@ function Header({
               type="number"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleFindClick()}
               placeholder="Buscar..."
               className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 transition-shadow"
             />
             <button
-              onClick={handleFind}
+              onClick={handleFindClick}
               className="w-full px-4 py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 active:scale-95 transition-all duration-200 shadow-sm"
             >
               Buscar
@@ -118,7 +121,7 @@ function Header({
                   found ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {found ? "Encontrado" : "Não encontrado"}
+                {found ? "Encontrado!" : "Não encontrado"}
               </p>
             )}
           </div>
